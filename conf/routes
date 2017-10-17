@@ -8,6 +8,8 @@ module:testrunner
 
 
 POST     /addUser                                       User.AddUser
+POST     /addRecord                                       User.AddRecord
+GET     /showRecords                                       User.ShowRecords
 POST     /checkUser                                     User.CheckUser
 GET     /allUsers                                      User.AllUsers
 

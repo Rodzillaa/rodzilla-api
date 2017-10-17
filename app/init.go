@@ -44,10 +44,22 @@ func InitDB() {
 	myDBDir := "/home/brow/Documents/RatDB"
 	// (Create if not exist) open a database
 	controllers.RatDB, _ = db.OpenDB(myDBDir)
-	// users := controllers.RatDB.Use("Users")
-	// if err := users.Index([]string{"username"}); err != nil {
-	// 	revel.ERROR.Println(err)
-	// }
+	if err := controllers.RatDB.Create("Users"); err != nil {
+		revel.ERROR.Println(err)
+	}
+	if err := controllers.RatDB.Create("Records"); err != nil {
+		revel.ERROR.Println(err)
+	}
+
+	users := controllers.RatDB.Use("Users")
+	if err := users.Index([]string{"username"}); err != nil {
+		revel.ERROR.Println(err)
+	}
+
+	records := controllers.RatDB.Use("Records")
+	if err := records.Index([]string{"key"}); err != nil {
+		revel.ERROR.Println(err)
+	}
 }
 
 // HeaderFilter adds common security headers
