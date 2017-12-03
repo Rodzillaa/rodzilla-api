@@ -67,9 +67,14 @@ func (c User) ShowRecords() revel.Result {
 		revel.ERROR.Println(err)
 		return c.RenderError(err)
 	}
+	count := 0
 	for id := range queryResult {
+		if count > 1000 {
+			break
+		}
 		readBack, _ := records.Read(id)
 		res[strconv.Itoa(id)] = readBack
+		count++
 	}
 	return c.RenderJSON(res)
 }
@@ -123,26 +128,29 @@ func (c User) AddRecord() revel.Result {
 func (c User) CheckUser() revel.Result {
 	username := c.Params.Form.Get("username")
 	password := c.Params.Form.Get("password")
-	if len(username) > 0 {
-		// check if user credentials are valid
-		users := RatDB.Use("Users")
-		var query interface{}
-		json.Unmarshal([]byte(fmt.Sprintf(`[{"eq": "%s", "in": ["username"]}]`, username)), &query)
-		queryResult := make(map[int]struct{}) // query result (document IDs) goes into map keys
-		if err := db.EvalQuery(query, users, &queryResult); err != nil {
+	// check if user credentials are valid
+	users := RatDB.Use("Users")
+	var query interface{}
+	json.Unmarshal([]byte(fmt.Sprintf(`[{"eq": "%s", "in": ["username"]}]`, username)), &query)
+	queryResult := make(map[int]struct{}) // query result (document IDs) goes into map keys
+	if err := db.EvalQuery(query, users, &queryResult); err != nil {
+		return c.RenderError(err)
+	}
+	if len(queryResult) == 0 {
+		res := make(map[string]interface{})
+		res["status"] = 1
+		return c.RenderJSON(res)
+	}
+	for id := range queryResult {
+		readBack, err := users.Read(id)
+		if err != nil {
 			return c.RenderError(err)
 		}
-		for id := range queryResult {
-			readBack, err := users.Read(id)
-			if err != nil {
-				return c.RenderError(err)
-			}
-			err = bcrypt.CompareHashAndPassword([]byte(readBack["password"].(string)), []byte(password))
-			if err == nil {
-				res := make(map[string]interface{})
-				res["status"] = 1
-				return c.RenderJSON(res)
-			}
+		err = bcrypt.CompareHashAndPassword([]byte(readBack["password"].(string)), []byte(password))
+		if err == nil {
+			res := make(map[string]interface{})
+			res["status"] = 1
+			return c.RenderJSON(res)
 		}
 	}
 
